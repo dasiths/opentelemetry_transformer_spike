@@ -10,7 +10,9 @@ exporters:
   debug:
     verbosity: detailed
   zipkin:
-    endpoint: "http://zipkin:9411/api/v2/spans"
+    endpoint: "http://zipkin1:9411/api/v2/spans"
+  zipkin/2:
+    endpoint: "http://zipkin2:9411/api/v2/spans"
 
 processors:
   batch:
@@ -27,6 +29,10 @@ service:
       receivers: [otlp]
       processors: [batch]
       exporters: [zipkin, debug]
+    traces/2:
+      receivers: [otlp]
+      processors: [batch]
+      exporters: [zipkin/2, debug]
     metrics:
       receivers: [otlp]
       processors: [batch]

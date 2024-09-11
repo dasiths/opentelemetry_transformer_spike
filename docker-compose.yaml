@@ -4,11 +4,17 @@ volumes:
   grafana-data: {}
 services:
   # Zipkin
-  zipkin:
+  zipkin1:
     image: openzipkin/zipkin:latest
-    container_name: zipkin
+    container_name: zipkin1
     ports:
       - 9411:9411
+
+  zipkin2:
+    image: openzipkin/zipkin:latest
+    container_name: zipkin2
+    ports:
+      - 9412:9411
 
   otel-collector:
     image: otel/opentelemetry-collector:latest
@@ -21,4 +27,5 @@ services:
       - "4317:4317"   # OTLP gRPC receiver
       - "4318:4318"   # OTLP http receiver
     depends_on:
-      - zipkin
+      - zipkin1
+      - zipkin2

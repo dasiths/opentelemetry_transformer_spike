@@ -25,6 +25,7 @@ def do_work():
     with tracer.start_as_current_span("test-span-1") as span:
         span.set_attribute("name", "test")
         print("doing some work...")
+        function_with_pii()
 
 def function_with_pii():
     with tracer.start_as_current_span("test-span-2") as span:
@@ -34,4 +35,3 @@ def function_with_pii():
 
 if __name__ == "__main__":
     do_work()
-    function_with_pii()
