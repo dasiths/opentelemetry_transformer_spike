@@ -1,0 +1,24 @@
+version: "3"
+volumes:
+  prometheus-data: {}
+  grafana-data: {}
+services:
+  # Zipkin
+  zipkin:
+    image: openzipkin/zipkin:latest
+    container_name: zipkin
+    ports:
+      - 9411:9411
+
+  otel-collector:
+    image: otel/opentelemetry-collector:latest
+    #image: otel/opentelemetry-collector
+    command: ["--config=/etc/otel-collector-config.yaml"]
+    volumes:
+      - ./otel-collector-config.yaml:/etc/otel-collector-config.yaml
+    ports:
+      - "13133:13133" # health_check extension
+      - "4317:4317"   # OTLP gRPC receiver
+      - "4318:4318"   # OTLP http receiver
+    depends_on:
+      - zipkin
