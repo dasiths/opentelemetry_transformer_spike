@@ -10,19 +10,20 @@ exporters:
   debug:
     verbosity: detailed
   zipkin:
-    endpoint: "http://zipkin1:9411/api/v2/spans"
-  zipkin/2:
-    endpoint: "http://zipkin2:9411/api/v2/spans"
+    endpoint: "http://zipkin:9411/api/v2/spans"
+  otlp/jaeger:
+    endpoint: "http://jaeger:4317"
+    tls:
+      insecure: true
 
 processors:
   batch:
-  attributes/pii: # This processor will redact any spans that have the attribute has_pii set to true
+  attributes/user: # This processor will redact the "user" field any spans with the name "known-span-with-sensitive-attributes"
     # https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/processor/attributesprocessor
     include:
       match_type: strict
-      attributes:
-        - key: has_pii
-          value: "true"
+      span_names:
+        - "known-span-with-sensitive-attributes"
     actions:
       - key: user
         action: upsert
@@ -30,6 +31,14 @@ processors:
       - key: redacted_span
         value: true
         action: upsert
+  filter/pii: # This processor will filter out any spans and events with the attribute "has_pii" set to "true"
+    # https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/processor/filterprocessor
+    error_mode: ignore
+    traces:
+      span:
+        - 'attributes["has_pii"] == "true"'
+      spanevent:
+        - 'attributes["has_pii"] == "true"'
 
 extensions:
   health_check:
@@ -41,12 +50,12 @@ service:
   pipelines:
     traces:
       receivers: [otlp]
-      processors: [attributes/pii, batch]
-      exporters: [zipkin, debug]
+      processors: [filter/pii, attributes/user, batch]
+      exporters: [zipkin]
     traces/2:
       receivers: [otlp]
       processors: [batch]
-      exporters: [zipkin/2, debug]
+      exporters: [otlp/jaeger, debug]
     metrics:
       receivers: [otlp]
       processors: [batch]

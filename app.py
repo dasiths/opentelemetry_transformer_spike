@@ -22,15 +22,24 @@ trace.set_tracer_provider(traceProvider)
 tracer = trace.get_tracer("my.tracer.name")
 
 def do_work():
-    with tracer.start_as_current_span("test-span-1") as span:
+    with tracer.start_as_current_span("parent-span") as span:
         span.set_attribute("name", "test")
         print("doing some work...")
-        function_with_pii()
+        mixed_function()
 
-def function_with_pii():
-    with tracer.start_as_current_span("test-span-2") as span:
-        span.set_attribute("has_pii", "true")
+def mixed_function():
+    with tracer.start_as_current_span("known-span-with-sensitive-attributes") as span:
         span.set_attribute("user", "someone")
+        span.add_event("Some event", {"event1": "value"})
+        span.add_event("Explicit PII event", {"event2": "value", "has_pii": "true"})
+        print("simulating a mixed function which has a sensitive attributes...")
+        log_ppi_data()
+
+def log_ppi_data():
+    with tracer.start_as_current_span("sensitive-span") as span:
+        span.set_attribute("has_pii", "true")
+        span.add_event("Implicit PII event", {"event3": "value"})
+        span.add_event("Explicit PII event", {"event4": "value", "has_pii": "true"})
         print("doing some work with PII...")
 
 if __name__ == "__main__":

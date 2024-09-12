@@ -1,24 +1,19 @@
-version: "3"
-volumes:
-  prometheus-data: {}
-  grafana-data: {}
 services:
-  # Zipkin
-  zipkin1:
+  zipkin:
     image: openzipkin/zipkin:latest
-    container_name: zipkin1
+    container_name: zipkin
     ports:
-      - 9411:9411
+      - "9411:9411" # Zipkin UI and API
 
-  zipkin2:
-    image: openzipkin/zipkin:latest
-    container_name: zipkin2
+  jaeger:
+    image: jaegertracing/all-in-one:1.60
+    container_name: jaeger
     ports:
-      - 9412:9411
+      - "16686:16686" # Jaeger UI
 
   otel-collector:
     image: otel/opentelemetry-collector:latest
-    #image: otel/opentelemetry-collector
+    container_name: otel-collector
     command: ["--config=/etc/otel-collector-config.yaml"]
     volumes:
       - ./otel-collector-config.yaml:/etc/otel-collector-config.yaml
@@ -27,5 +22,5 @@ services:
       - "4317:4317"   # OTLP gRPC receiver
       - "4318:4318"   # OTLP http receiver
     depends_on:
-      - zipkin1
-      - zipkin2
+      - zipkin
+      - jaeger
