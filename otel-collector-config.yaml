@@ -16,6 +16,19 @@ exporters:
 
 processors:
   batch:
+  attributes/pii:
+    include:
+      match_type: strict
+      attributes:
+        - key: has_pii
+          value: "true"
+    actions:
+      - key: user
+        action: upsert
+        value: "{redacted}"
+      - key: redacted_span
+        value: true
+        action: upsert
 
 extensions:
   health_check:
@@ -27,7 +40,7 @@ service:
   pipelines:
     traces:
       receivers: [otlp]
-      processors: [batch]
+      processors: [attributes/pii, batch]
       exporters: [zipkin, debug]
     traces/2:
       receivers: [otlp]
