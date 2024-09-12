@@ -16,7 +16,8 @@ exporters:
 
 processors:
   batch:
-  attributes/pii:
+  attributes/pii: # This processor will redact any spans that have the attribute has_pii set to true
+    # https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/processor/attributesprocessor
     include:
       match_type: strict
       attributes:
