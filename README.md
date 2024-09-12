@@ -9,8 +9,8 @@
 ![Filtered backend](filtered-backend.png)
 
 - `known-span-with-sensitive-attributes` span's `user` attribute value is redacted.
-- `Explicit PII event` with `"has_pii": "true"` is filtered out.
-- `sensitive-span` with `"has_pii": "true"` span is filtered out.
+- `Explicit PII event` with `"has_pii": "true"` attributes is filtered out.
+- `sensitive-span` span with `"has_pii": "true"` attributes is filtered out.
 
 ## Unfiltered backend
 
