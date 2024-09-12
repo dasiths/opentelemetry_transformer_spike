@@ -31,12 +31,13 @@ processors:
       - key: redacted_span
         value: true
         action: upsert
-  filter/pii: # This processor will filter out any spans and events with the attribute "has_pii" set to "true"
+  filter/pii: # This processor will filter out any spans with name "sensitive-span" or spans and events with the attribute "has_pii" set to "true"
     # https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/processor/filterprocessor
     error_mode: ignore
     traces:
       span:
         - 'attributes["has_pii"] == "true"'
+        - 'name == "sensitive-span"'
       spanevent:
         - 'attributes["has_pii"] == "true"'
 
