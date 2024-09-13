@@ -9,11 +9,13 @@
 ![Filtered backend](filtered-backend.png)
 
 - `known-span-with-sensitive-attributes` span's `user` attribute value is redacted.
-- `Explicit PII event` with `"has_pii": "true"` attributes is filtered out.
-- `sensitive-span` span with `"has_pii": "true"` attributes is filtered out.
+- Names and attributes of spans or span events with `"has_pii": "true"` attribute is redacted.
+- `known-sensitive-span` span attributes and events are redacted.
+- Tax File Numbers are redacted from spans and span events.
 
 ## Unfiltered backend
 
 ![Unfiltered backend](unfiltered-backend.png)
 
-- All spans and associated events (logs) are shown.
+- Tax File Numbers are redacted from spans and span events.
+- All other spans and associated events (logs) are shown.

@@ -1,6 +1,6 @@
 services:
   zipkin:
-    image: openzipkin/zipkin:latest
+    image: openzipkin/zipkin:3.4.1
     container_name: zipkin
     ports:
       - "9411:9411" # Zipkin UI and API
@@ -12,7 +12,7 @@ services:
       - "16686:16686" # Jaeger UI
 
   otel-collector:
-    image: otel/opentelemetry-collector:latest
+    image: otel/opentelemetry-collector-contrib:0.109.0
     container_name: otel-collector
     command: ["--config=/etc/otel-collector-config.yaml"]
     volumes:

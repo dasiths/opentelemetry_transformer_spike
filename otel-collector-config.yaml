@@ -18,28 +18,39 @@ exporters:
 
 processors:
   batch:
-  attributes/user: # This processor will redact the "user" field any spans with the name "known-span-with-sensitive-attributes"
-    # https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/processor/attributesprocessor
-    include:
-      match_type: strict
-      span_names:
-        - "known-span-with-sensitive-attributes"
-    actions:
-      - key: user
-        action: upsert
-        value: "{redacted}"
-      - key: redacted_span
-        value: true
-        action: upsert
-  filter/pii: # This processor will filter out any spans with name "sensitive-span" or spans and events with the attribute "has_pii" set to "true"
-    # https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/processor/filterprocessor
+  transform/redact_special: # This processor will redact any spans and span events with the given regex patterns
+    # https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/processor/transformprocessor
+    # https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/pkg/ottl#grammar
     error_mode: ignore
-    traces:
-      span:
-        - 'attributes["has_pii"] == "true"'
-        - 'name == "sensitive-span"'
-      spanevent:
-        - 'attributes["has_pii"] == "true"'
+    trace_statements:
+      - context: span # https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/pkg/ottl/contexts/ottlspan
+        statements:          
+          # https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/pkg/ottl/ottlfuncs#replace_all_patterns
+          - replace_all_patterns(attributes, "value", "\\b\\d{3}\\s?\\d{3}\\s?\\d{3}\\b", "{redacted}")
+      - context: spanevent # https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/pkg/ottl/contexts/ottlspanevent
+        statements:
+          # https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/pkg/ottl/ottlfuncs#replace_pattern
+          - replace_pattern(name, "\\b\\d{3}\\s?\\d{3}\\s?\\d{3}\\b", "{redacted}")
+          - replace_all_patterns(attributes, "value", "\\b\\d{3}\\s?\\d{3}\\s?\\d{3}\\b", "{redacted}")
+  transform/redact_user: # This processor will redact the "user" field any spans with the name "known-span-with-sensitive-attributes"
+    error_mode: ignore
+    trace_statements:
+      - context: span
+        statements:
+          - set(attributes["user"], "{redacted}") where name == "known-span-with-sensitive-attributes"
+          - set(attributes["user_redacted_span"], "true") where name == "known-span-with-sensitive-attributes"
+  transform/filter_pii: # This processor will filter out any spans with name "sensitive-span" or spans and events with the attribute "has_pii" set to "true"
+    error_mode: ignore
+    trace_statements:
+      - context: span
+        statements:
+          - set(attributes["hass_pii"], "true") where name == "known-sensitive-span"
+          - set(name, "redacted-sensitive-span") where attributes["has_pii"] == "true"
+          - keep_keys(attributes, ["has_pii"]) where attributes["has_pii"] == "true"
+      - context: spanevent
+        statements:
+          - set(name, "redacted-sensitive-event") where attributes["has_pii"] == "true" or span.attributes["has_pii"] == "true"
+          - keep_keys(attributes, ["has_pii"]) where attributes["has_pii"] == "true" or span.attributes["has_pii"] == "true"
 
 extensions:
   health_check:
@@ -51,11 +62,11 @@ service:
   pipelines:
     traces:
       receivers: [otlp]
-      processors: [filter/pii, attributes/user, batch]
+      processors: [transform/filter_pii, transform/redact_user, transform/redact_special, batch]
       exporters: [zipkin]
     traces/2:
       receivers: [otlp]
-      processors: [batch]
+      processors: [transform/redact_special, batch]
       exporters: [otlp/jaeger, debug]
     metrics:
       receivers: [otlp]
