@@ -39,12 +39,12 @@ processors:
         statements:
           - set(attributes["user"], "{redacted}") where name == "known-span-with-sensitive-attributes"
           - set(attributes["user_redacted_span"], "true") where name == "known-span-with-sensitive-attributes"
-  transform/filter_pii: # This processor will filter out any spans with name "sensitive-span" or spans and events with the attribute "has_pii" set to "true"
+  transform/filter_pii: # This processor will filter out any spans with name "known-sensitive-span" or spans and events with the attribute "has_pii" set to "true"
     error_mode: ignore
     trace_statements:
       - context: span
         statements:
-          - set(attributes["hass_pii"], "true") where name == "known-sensitive-span"
+          - set(attributes["has_pii"], "true") where name == "known-sensitive-span"
           - set(name, "redacted-sensitive-span") where attributes["has_pii"] == "true"
           - keep_keys(attributes, ["has_pii"]) where attributes["has_pii"] == "true"
       - context: spanevent
