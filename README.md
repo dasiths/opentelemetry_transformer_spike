@@ -1,5 +1,8 @@
 # OpenTelemetry Collector: Handling PII data example
 
+## All-in-one with Azure Monitor trace sink
+Utilising grafana/otel-lgtm, and an Application Insights with connection string defined in environment variable `${env:APPLICATIONINSIGHTS_CONNECTION_STRING}`
+
 ## Design
 
 ![Design](design.png)

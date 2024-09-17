@@ -1,26 +1,39 @@
 services:
-  zipkin:
-    image: openzipkin/zipkin:3.4.1
-    container_name: zipkin
-    ports:
-      - "9411:9411" # Zipkin UI and API
+  # zipkin:
+  #   image: openzipkin/zipkin:3.4.1
+  #   container_name: zipkin
+  #   ports:
+  #     - "9411:9411" # Zipkin UI and API
 
-  jaeger:
-    image: jaegertracing/all-in-one:1.60
-    container_name: jaeger
-    ports:
-      - "16686:16686" # Jaeger UI
+  # jaeger:
+  #   image: jaegertracing/all-in-one:1.60
+  #   container_name: jaeger
+  #   ports:
+  #     - "16686:16686" # Jaeger UI
 
-  otel-collector:
-    image: otel/opentelemetry-collector-contrib:0.109.0
-    container_name: otel-collector
-    command: ["--config=/etc/otel-collector-config.yaml"]
+  # otel-collector:
+  #   image: otel/opentelemetry-collector-contrib:0.109.0
+  #   container_name: otel-collector
+  #   command: ["--config=/etc/otel-collector-config.yaml"]
+  #   volumes:
+  #     - ./otel-collector-config.yaml:/etc/otel-collector-config.yaml
+  #   ports:
+  #     - "13133:13133" # health_check extension
+  #     - "4317:4317"   # OTLP gRPC receiver
+  #     - "4318:4318"   # OTLP http receiver
+  #   depends_on:
+  #     - zipkin
+  #     - jaeger
+
+  grafana-otel-collector:
+    image: grafana/otel-lgtm:0.7.3
+    container_name: otel-lgtm
+    env_file:
+      - .env
     volumes:
-      - ./otel-collector-config.yaml:/etc/otel-collector-config.yaml
+      - ./otel-collector-config.yaml:/otel-lgtm/otelcol-config.yaml
     ports:
       - "13133:13133" # health_check extension
+      - "3000:3000"   # Grafana UI
       - "4317:4317"   # OTLP gRPC receiver
       - "4318:4318"   # OTLP http receiver
-    depends_on:
-      - zipkin
-      - jaeger

@@ -1,7 +1,7 @@
 start:
 	-docker-compose down
 	docker-compose up -d
-	python3 app.py
+	python app.py
 
 stop:
 	-docker-compose down

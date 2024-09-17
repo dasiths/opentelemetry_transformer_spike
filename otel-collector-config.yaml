@@ -5,16 +5,12 @@ receivers:
         endpoint: 0.0.0.0:4317
       http:
         endpoint: 0.0.0.0:4318
-
-exporters:
-  debug:
-    verbosity: detailed
-  zipkin:
-    endpoint: "http://zipkin:9411/api/v2/spans"
-  otlp/jaeger:
-    endpoint: "http://jaeger:4317"
-    tls:
-      insecure: true
+  prometheus/collector:
+    config:
+      scrape_configs:
+        - job_name: 'opentelemetry-collector'
+          static_configs:
+            - targets: ['localhost:8888']
 
 processors:
   batch:
@@ -52,23 +48,47 @@ processors:
           - set(name, "redacted-sensitive-event") where attributes["has_pii"] == "true" or span.attributes["has_pii"] == "true"
           - keep_keys(attributes, ["has_pii"]) where attributes["has_pii"] == "true" or span.attributes["has_pii"] == "true"
 
-extensions:
-  health_check:
-  pprof:
-  zpages:
+exporters:
+  azuremonitor:
+    connection_string: ${env:APPLICATIONINSIGHTS_CONNECTION_STRING}
+    spaneventsenabled: true
+  otlphttp/metrics:
+    endpoint: http://localhost:9090/api/v1/otlp
+    tls:
+      insecure: true
+  otlphttp/traces:
+    endpoint: http://localhost:4418
+    tls:
+      insecure: true
+  otlphttp/logs:
+    endpoint: http://localhost:3100/otlp
+    tls:
+      insecure: true
+  debug/metrics:
+    verbosity: detailed
+  debug/traces:
+    verbosity: detailed
+  debug/logs:
+    verbosity: detailed
 
 service:
-  extensions: [pprof, zpages, health_check]
   pipelines:
     traces:
       receivers: [otlp]
       processors: [transform/filter_pii, transform/redact_user, transform/redact_special, batch]
-      exporters: [zipkin]
+      exporters: [azuremonitor]
+      #exporters: [otlphttp/traces,debug/traces]
     traces/2:
       receivers: [otlp]
-      processors: [transform/redact_special, batch]
-      exporters: [otlp/jaeger, debug]
+      processors: [batch]
+      exporters: [otlphttp/traces]
     metrics:
+      receivers: [otlp,prometheus/collector]
+      processors: [batch]
+      exporters: [otlphttp/metrics]
+      #exporters: [otlphttp/metrics,debug/metrics]
+    logs:
       receivers: [otlp]
       processors: [batch]
-      exporters: [debug]
+      exporters: [otlphttp/logs]
+      #exporters: [otlphttp/logs,debug/logs]
