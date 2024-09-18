@@ -22,19 +22,29 @@ processors:
       - context: span # https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/pkg/ottl/contexts/ottlspan
         statements:          
           # https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/pkg/ottl/ottlfuncs#replace_all_patterns
-          - replace_all_patterns(attributes, "value", "\\b\\d{3}\\s?\\d{3}\\s?\\d{3}\\b", "{redacted}")
+          # TFN- 8 or 9 digits separated by " " or "-"
+          - replace_all_patterns(attributes, "value", "(?P<prefix>\\D*)(?:(\\d[\\s-]?){8,9})(?P<suffix>\\D*)", "{redacted}")
+          # CC - 15 or 16 digits separated by " " or "-"
+          - replace_all_patterns(attributes, "value", "(?P<prefix>\\D*)(?:(\\d[\\s-]?){15,16})(?P<suffix>\\D*)", "{redacted}")
+
       - context: spanevent # https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/pkg/ottl/contexts/ottlspanevent
         statements:
+          # - replace_pattern(name, "Event ", "Foo ")
           # https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/pkg/ottl/ottlfuncs#replace_pattern
-          - replace_pattern(name, "\\b\\d{3}\\s?\\d{3}\\s?\\d{3}\\b", "{redacted}")
-          - replace_all_patterns(attributes, "value", "\\b\\d{3}\\s?\\d{3}\\s?\\d{3}\\b", "{redacted}")
+          # CC - 15 or 16 digits separated by " " or "-"
+          # N.B. do longer check first - i.e. 15-16 > 8-9
+          - replace_pattern(name, "(?P<prefix>\\D*)(?:(\\d[\\s-]?){15,16})(?P<suffix>\\D*)", "$$prefix {redacted} $$suffix")
+          # TFN- 8 or 9 digits separated by " " or "-"
+          - replace_pattern(name, "(?P<prefix>\\D*)(?:(\\d[\\s-]?){8,9})(?P<suffix>\\D*)", "$$prefix {redacted} $$suffix")
+
+
   transform/redact_user: # This processor will redact the "user" field any spans with the name "known-span-with-sensitive-attributes"
     error_mode: ignore
     trace_statements:
       - context: span
         statements:
-          - set(attributes["user"], "{redacted}") where name == "known-span-with-sensitive-attributes"
-          - set(attributes["user_redacted_span"], "true") where name == "known-span-with-sensitive-attributes"
+          - set(attributes["user"], "{redacted}")
+          - set(attributes["user_redacted_span"], "true")
 
   transform/sensitize_specific_spans:
     error_mode: ignore
@@ -51,7 +61,8 @@ processors:
       - context: span
         statements:
           - set(name, "redacted-sensitive-span") where attributes["is_sensitive"] == "true"
-          - keep_keys(attributes, ["is_sensitive"]) where attributes["is_sensitive"] == "true"
+          - set(attributes["is_redacted"], "true") where attributes["is_sensitive"] == "true"
+          - keep_keys(attributes, ["is_sensitive", "is_redacted"]) where attributes["is_sensitive"] == "true"
 
 
   transform/inherit_span_sensitivity: 
@@ -61,7 +72,8 @@ processors:
         statements:
           - set(attributes["is_sensitive"], "true") where span.attributes["is_sensitive"] == "true"
           - set(name, "redacted-sensitive-event") where attributes["is_sensitive"] == "true"
-          - keep_keys(attributes, ["is_sensitive"]) where span.attributes["is_sensitive"] == "true"
+          - set(attributes["is_redacted"], "true") where attributes["is_sensitive"] == "true"
+          - keep_keys(attributes, ["is_sensitive", "is_redacted"]) where span.attributes["is_sensitive"] == "true"
 
   # transform/filter_pii: # This processor will filter out any spans with name "known-sensitive-span" or spans and events with the attribute "is_sensitive" set to "true"
   #   error_mode: ignore
@@ -104,13 +116,13 @@ service:
     traces:
       receivers: [otlp]
       # processors: [transform/filter_pii, transform/redact_user, transform/redact_special, batch]
-      processors: [transform/sensitize_specific_spans, transform/redact_sensitive_spans, transform/inherit_span_sensitivity, batch]
+      processors: [transform/redact_special, transform/sensitize_specific_spans, transform/redact_sensitive_spans, transform/inherit_span_sensitivity, batch]
       exporters: [azuremonitor]
       #exporters: [otlphttp/traces,debug/traces]
     traces/2:
       receivers: [otlp]
-      processors: [batch]
-      exporters: [otlphttp/traces]
+      processors: [transform/sensitize_specific_spans, transform/redact_special, batch]
+      exporters: [otlphttp/traces, debug/traces]
     metrics:
       receivers: [otlp,prometheus/collector]
       processors: [batch]

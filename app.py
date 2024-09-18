@@ -9,7 +9,7 @@ from opentelemetry.sdk.trace.export import BatchSpanProcessor
 
 # Service name is required for most backends
 resource = Resource(attributes={
-    SERVICE_NAME: "your-service-name"
+    SERVICE_NAME: "new-service-name"
 })
 
 traceProvider = TracerProvider(resource=resource)
@@ -24,9 +24,12 @@ tracer = trace.get_tracer("my.tracer.name")
 def calling_autoinstrumented_libA():
         with tracer.start_as_current_span("auto-instrumented-span-to-suppress") as span:
           span.set_attribute("app_name", "libA")
-          span.set_attribute("api_key", "123456789")
+          span.set_attribute("api_key", "TFN 123456789")
           span.add_event("Event 1: Calling API")
-          span.add_event("Event 2: Returned 123456")
+          span.add_event("Event 2: Returned TFN 123456789")
+          span.add_event("Event 3: Returned TFN 12345678 something and CC 123 456789 012-3456")
+          span.add_event("1234567890123456")
+          span.add_event("Event 5: Returned CC 123 456789 012-3456")
     
 def calling_autoinstrumented_libB():
         with tracer.start_as_current_span("another-span-to-suppress") as span:
@@ -50,7 +53,7 @@ def calling_autoinstrumented_libC():
 def calling_autoinstrumented():
     calling_autoinstrumented_libA()
     calling_autoinstrumented_libB()
-    calling_autoinstrumented_libC()
+    # calling_autoinstrumented_libC()
 
 def do_work():
     with tracer.start_as_current_span("oblivious-to-sensitivity") as span:
