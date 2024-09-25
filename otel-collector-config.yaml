@@ -49,9 +49,9 @@ processors:
           - keep_keys(attributes, ["has_pii"]) where attributes["has_pii"] == "true" or span.attributes["has_pii"] == "true"
 
 exporters:
-  azuremonitor:
-    connection_string: ${env:APPLICATIONINSIGHTS_CONNECTION_STRING}
-    spaneventsenabled: true
+  # azuremonitor:
+  #   connection_string: ${env:APPLICATIONINSIGHTS_CONNECTION_STRING}
+  #   spaneventsenabled: true
   otlphttp/metrics:
     endpoint: http://localhost:9090/api/v1/otlp
     tls:
@@ -76,8 +76,8 @@ service:
     traces:
       receivers: [otlp]
       processors: [transform/filter_pii, transform/redact_user, transform/redact_special, batch]
-      exporters: [azuremonitor]
-      #exporters: [otlphttp/traces,debug/traces]
+      # exporters: [azuremonitor]
+      exporters: [otlphttp/traces,debug/traces]
     traces/2:
       receivers: [otlp]
       processors: [batch]
