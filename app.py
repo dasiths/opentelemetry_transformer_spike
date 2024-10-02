@@ -78,5 +78,13 @@ def log_ppi_data():
         print("doing some work with PII...")
 
 if __name__ == "__main__":
-    # do_work()
-    calling_autoinstrumented()
+    mainspan = tracer.start_span("main-span")
+    with trace.use_span(mainspan, end_on_exit=True):
+      # do_work()
+      calling_autoinstrumented()
+      # Get the current span
+      current_span = trace.get_current_span()
+      # Get the trace_id from the span context
+      trace_id = hex(current_span.get_span_context().trace_id)
+      # Print the trace_id
+      print(f"Trace ID: {trace_id}")
