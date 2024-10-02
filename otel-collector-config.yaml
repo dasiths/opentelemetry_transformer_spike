@@ -89,9 +89,9 @@ processors:
   #         - keep_keys(attributes, ["is_sensitive"]) where attributes["is_sensitive"] == "true" or span.attributes["is_sensitive"] == "true"
 
 exporters:
-  azuremonitor:
-    connection_string: ${env:APPLICATIONINSIGHTS_CONNECTION_STRING}
-    spaneventsenabled: true
+  # azuremonitor:
+  #   connection_string: ${env:APPLICATIONINSIGHTS_CONNECTION_STRING}
+  #   spaneventsenabled: true
   otlphttp/metrics:
     endpoint: http://localhost:9090/api/v1/otlp
     tls:
@@ -119,6 +119,7 @@ service:
       processors: [transform/redact_special, transform/sensitize_specific_spans, transform/redact_sensitive_spans, transform/inherit_span_sensitivity, batch]
       exporters: [azuremonitor]
       #exporters: [otlphttp/traces,debug/traces]
+
     traces/2:
       receivers: [otlp]
       processors: [transform/sensitize_specific_spans, transform/redact_special, batch]
